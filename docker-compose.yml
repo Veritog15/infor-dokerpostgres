@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  # 1. SERVICIO DE WORDPRESS (CONSTRUIDO)
+  wordpress:
+    build: .  # <-- ¡Construye usando el Dockerfile!
+    container_name: wordpress_app
+    restart: always
+    ports:
+      - "80:80"
+    environment:
+      # Variables que el driver db.php leerá
+      WORDPRESS_DB_HOST: postgres_db 
+      WORDPRESS_DB_NAME: wordpress_db
+      WORDPRESS_DB_USER: wpuser
+      WORDPRESS_DB_PASSWORD: supersecretpassword
+      WORDPRESS_DB_DRIVER: pgsql # Le dice al driver que use pgsql
+    volumes:
+      - wp_data:/var/www/html
+    networks:
+      - wordpress-net
+    depends_on:
+      - postgres_db 
+
+  # 2. SERVICIO DE BASE DE DATOS (POSTGRESQL)
+  postgres_db:
+    image: postgres:14
+    container_name: postgres_db
+    restart: always
+    environment:
+      POSTGRES_DB: wordpress_db
+      POSTGRES_USER: wpuser
+      POSTGRES_PASSWORD: supersecretpassword
+    volumes:
+      - ./postgres_data:/var/lib/postgresql/data
+    networks:
+      - wordpress-net
+
+  # 3. SERVICIO DE GESTIÓN DE BASE DE DATOS (PGADMIN)
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin_tool
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: user@example.com
+      PGADMIN_DEFAULT_PASSWORD: adminpassword
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    networks:
+      - wordpress-net
+    depends_on:
+      - postgres_db
+
+volumes:
+  wp_data:
+  pgadmin_data:
+
+networks:
+  wordpress-net:
+    driver: bridge
